@@ -15,6 +15,17 @@ router.get('/session', authenticateToken, async (req, res) => {
   return res.status(200).json({ message: "User logged in", isLoggedIn: true });
 });
 
+// Send user data
+router.get('/', authenticateToken, async (req, res) => {
+
+  try {
+    return res.status(200).json({ message: "Account retrieved successfully.", data: req.user });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 // Sign up
 router.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
@@ -68,7 +79,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: "Email or password are wrong." });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, email: user.email, username: user.username }, JWT_SECRET, {
       expiresIn: '1h',
     });
 
@@ -76,6 +87,57 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// update account data
+router.post('/update', authenticateToken, async (req, res) => {
+  const { username, email, password } = req.body;
+  const accountId = req.user.id;
+
+  if (!username || !email) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  if (password !== '') {
+    try {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      await pool.query(
+        `UPDATE  
+          accounts 
+        SET 
+          username = $1,
+          email = $2,
+          password = $3 
+        WHERE 
+          id = $4 
+        `,
+        [username, email, hashedPassword, accountId]
+      );
+      return res.status(201).json({ message: "Update account successful." });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error." });
+    }
+  } else if (password === '') {
+    try {
+      await pool.query(
+        `UPDATE  
+          accounts 
+        SET 
+          username = $1,
+          email = $2 
+        WHERE 
+          id = $3 
+        `,
+        [username, email, accountId]
+      );
+      return res.status(201).json({ message: "Update account." });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error." });
+    }
   }
 });
 

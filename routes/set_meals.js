@@ -128,6 +128,67 @@ router.post("/", authenticateToken, async (req, res) => {
   }
 });
 
+// send specific set meal for edit
+router.post("/", authenticateToken, async (req, res) => {
+  const accountId = req.user.id;
+  const { setMealId } = req.body;
+
+  if (!setMealId) {
+    return res.status(400).json({ error: "Set meal id is required." });
+  }
+  let setMealData = [];
+  let tagList = [];
+  let recipeList = [];
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM set_meals WHERE id = $1 and account_id = $2;",
+      [setMealId, accountId],
+    );
+
+    setMealData = result.rows[0];
+
+    if (result.rows.length < 1) {
+      return res.status(200).json({ message: "Set meal not found." });
+    }
+
+    try {
+      const result = await pool.query(
+        `SELECT * FROM set_meal_tags WHERE set_meal_id = $1;`,
+        [setMealData.id],
+      );
+      tagList = result.rows;
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error." });
+    }
+
+    try {
+      const result = await pool.query(
+        `
+          SELECT
+            r.id,
+            r.title,
+            r.image_url 
+          FROM set_recipe sr
+          JOIN recipes r ON sr.recipe_id = r.id
+          WHERE sr.set_meal_id = $1;
+        `,
+        [setMealData.id],
+      );
+      recipeList = result.rows;
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error." });
+    }
+
+    return res.status(200).json({ message: "Set meal retrieved successfully.", setMealData: setMealData, tag: tagList, recipe: recipeList });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 router.post("/search", authenticateToken, async (req, res) => {
   const { keyword } = req.body;
 
