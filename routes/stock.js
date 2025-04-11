@@ -42,6 +42,7 @@ router.get("/expiration", authenticateToken, async (req, res) => {
 // send specific stock data
 router.post("/", authenticateToken, async (req, res) => {
     const { stockId } = req.body;
+    const accountId = req.user.id;
   
     if (!stockId) {
       return res.status(400).json({ error: "Stock id is required." });
@@ -49,8 +50,8 @@ router.post("/", authenticateToken, async (req, res) => {
   
     try {
       const result = await pool.query(
-        `SELECT * FROM stock WHERE id = $1;`,
-        [stockId],
+        `SELECT * FROM stock WHERE id = $1 and account_id = $2;`,
+        [stockId, accountId],
       );
       if (result.rows.length < 1) {
         return res.status(200).json({ message: "Stock not found." });

@@ -11,6 +11,8 @@ import setMealsRoutes from "./routes/set_meals.js";
 import editRoutes from "./routes/edit.js";
 import stockRoutes from "./routes/stock.js";
 import shoppingListRoutes from "./routes/shopping_list.js";
+import deleteRoutes from "./routes/delete.js";
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -24,11 +26,16 @@ app.use("/set_meals", setMealsRoutes);
 app.use("/edit", editRoutes);
 app.use("/stock", stockRoutes);
 app.use("/shopping_list", shoppingListRoutes);
+app.use("/delete", deleteRoutes);
 
 const { Pool } = pkg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL, 
 });
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_API_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +44,7 @@ const RECIPE_IMAGE_DIR = path.join(__dirname, '/storage/recipe_images');
 app.use('/storage/recipe_images', express.static(RECIPE_IMAGE_DIR));
 
 export { pool };
+export { supabase };
 
 const port = process.env.PORT;
 app.listen(port, () => {

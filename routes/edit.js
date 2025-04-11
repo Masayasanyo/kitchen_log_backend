@@ -1,8 +1,5 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import path from "path";
-import multer from 'multer';
-import fs from 'fs';
 import authenticateToken from '../middlewares/authMiddleware.js';
 import { pool } from "../index.js";
 
@@ -211,49 +208,5 @@ router.post('/stock', authenticateToken, async (req, res) => {
         return res.status(500).json({ error: "Internal server error." });
     }
 });
-
-
-// edit a recipe image data
-const recipeImgStorage = multer.diskStorage({
-    destination: "./storage/recipe_images",
-    filename: (req, file, cb) => {
-        const newFileName = Date.now() + path.extname(file.originalname);
-        cb(null, newFileName);    },
-});
-
-const recipeImageUpload = multer({ storage: recipeImgStorage });
-
-router.post("/file", authenticateToken, recipeImageUpload.single("file"), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "File not found" });
-    }
-    else {
-        try {
-            return res.status(201).json({ message: 'Edit a file successful', url: `/storage/recipe_images/${req.file.filename}` }); 
-        } catch (error) {
-            console.error(error);
-            return res.status(500).json({ error: "Internal server error." });
-        }   
-    }
-});
-
-router.delete('/file', authenticateToken, async (req, res) => {
-    const { previousUrl } = req.body;
-  
-    if (!previousUrl) {
-      return res.status(400).json({ error: "Url is required." });
-    }
-
-    try {
-        const filePath = path.join(process.env.BACKEND_PATH, previousUrl);
-        fs.unlinkSync(filePath); 
-
-        return res.status(200).json({ message: "File delete successful."});
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ error: "Internal server error." });
-    }
-});
-
 
 export default router;
